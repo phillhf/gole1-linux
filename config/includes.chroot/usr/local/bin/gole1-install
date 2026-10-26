@@ -1,0 +1,139 @@
+#!/bin/bash
+# Installiert das laufende Gole1-Linux-Live-System auf den internen eMMC
+# (oder ein anderes Laufwerk). ACHTUNG: Das Ziellaufwerk wird komplett gelöscht.
+set -euo pipefail
+
+[ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
+
+TITLE="Gole1 Linux Installation"
+SRC=/run/live/rootfs/filesystem.squashfs
+MNT=/mnt/gole1-target
+export DEBIAN_FRONTEND=noninteractive
+
+die() { whiptail --title "$TITLE" --msgbox "Fehler: $*" 10 70; exit 1; }
+part() { case "$1" in *[0-9]) echo "${1}p$2" ;; *) echo "${1}$2" ;; esac; }
+
+[ -d "$SRC/usr" ] || die "Kein Live-System gefunden ($SRC). Bitte vom USB-Stick starten."
+[ -d /sys/firmware/efi ] || die "Das System wurde nicht per UEFI gestartet."
+
+# --- Ziellaufwerk wählen ---------------------------------------------------
+LIVEDEV=$(lsblk -no PKNAME "$(findmnt -no SOURCE /run/live/medium 2>/dev/null)" 2>/dev/null || true)
+MENU=()
+while read -r name size type ro model; do
+    [ "$type" = disk ] && [ "$ro" = 0 ] || continue
+    case "$name" in *boot[0-9]|*rpmb|/dev/loop*|/dev/zram*|/dev/sr*) continue ;; esac
+    [ -n "$LIVEDEV" ] && [ "$name" = "/dev/$LIVEDEV" ] && continue
+    MENU+=("$name" "$size ${model:-}")
+done < <(lsblk -dpno NAME,SIZE,TYPE,RO,MODEL)
+
+[ ${#MENU[@]} -gt 0 ] || die "Kein geeignetes Ziellaufwerk gefunden."
+
+DISK=$(whiptail --title "$TITLE" --menu \
+    "Auf welches Laufwerk soll installiert werden?\n(Der interne eMMC heißt meist /dev/mmcblk0 oder /dev/mmcblk1)" \
+    18 70 6 "${MENU[@]}" 3>&1 1>&2 2>&3) || exit 0
+
+# --- Benutzer --------------------------------------------------------------
+USERNAME=$(whiptail --title "$TITLE" --inputbox "Benutzername (klein, ohne Leerzeichen):" 10 60 "gole" 3>&1 1>&2 2>&3) || exit 0
+[[ "$USERNAME" =~ ^[a-z_][a-z0-9_-]*$ ]] || die "Ungültiger Benutzername: $USERNAME"
+while true; do
+    PW1=$(whiptail --title "$TITLE" --passwordbox "Passwort für $USERNAME:" 10 60 3>&1 1>&2 2>&3) || exit 0
+    PW2=$(whiptail --title "$TITLE" --passwordbox "Passwort wiederholen:" 10 60 3>&1 1>&2 2>&3) || exit 0
+    [ -n "$PW1" ] && [ "$PW1" = "$PW2" ] && break
+    whiptail --title "$TITLE" --msgbox "Passwörter leer oder ungleich - bitte erneut." 8 60
+done
+HOSTNAME_NEW=$(whiptail --title "$TITLE" --inputbox "Rechnername:" 10 60 "gole1" 3>&1 1>&2 2>&3) || exit 0
+AUTOLOGIN=yes
+whiptail --title "$TITLE" --yesno "Beim Start automatisch anmelden?\n(Empfohlen für reine Touch-Bedienung)" 10 60 || AUTOLOGIN=no
+
+whiptail --title "$TITLE" --defaultno --yesno \
+    "ALLE DATEN auf $DISK werden gelöscht!\n\nWirklich fortfahren?" 10 60 || exit 0
+
+# --- Partitionieren & formatieren -----------------------------------------
+echo "==> Partitioniere $DISK"
+for p in $(lsblk -lnpo NAME "$DISK" | tail -n +2); do umount "$p" 2>/dev/null || true; done
+wipefs -af "$DISK"
+sfdisk --wipe always "$DISK" <<EOF
+label: gpt
+size=512MiB, type=uefi, name="EFI"
+type=linux, name="gole1-root"
+EOF
+udevadm settle
+ESP=$(part "$DISK" 1)
+ROOT=$(part "$DISK" 2)
+mkfs.vfat -F 32 -n EFI "$ESP"
+mkfs.ext4 -F -L gole1-root "$ROOT"
+
+mkdir -p "$MNT"
+mount -o noatime "$ROOT" "$MNT"
+mkdir -p "$MNT/boot/efi"
+mount "$ESP" "$MNT/boot/efi"
+
+# --- System kopieren -------------------------------------------------------
+echo "==> Kopiere System (einige Minuten) ..."
+rsync -aHAX --info=progress2 "$SRC"/ "$MNT"/
+
+# --- Konfiguration ---------------------------------------------------------
+echo "==> Konfiguriere System"
+cat > "$MNT/etc/fstab" <<EOF
+UUID=$(blkid -s UUID -o value "$ROOT")  /          ext4  noatime,errors=remount-ro  0 1
+UUID=$(blkid -s UUID -o value "$ESP")  /boot/efi  vfat  umask=0077                 0 2
+tmpfs  /tmp  tmpfs  defaults,noatime,mode=1777,size=512M  0 0
+EOF
+echo "$HOSTNAME_NEW" > "$MNT/etc/hostname"
+cat > "$MNT/etc/hosts" <<EOF
+127.0.0.1   localhost
+127.0.1.1   $HOSTNAME_NEW
+::1         localhost ip6-localhost ip6-loopback
+EOF
+
+if [ "$AUTOLOGIN" = yes ]; then
+    sed -i "/^\[initial_session\]/,/^user/ s/^user = .*/user = \"$USERNAME\"/" "$MNT/etc/greetd/config.toml"
+else
+    sed -i '/^\[initial_session\]/,$d' "$MNT/etc/greetd/config.toml"
+fi
+rm -f "$MNT/usr/share/applications/gole1-install.desktop"
+
+for d in dev proc sys run; do mount --rbind "/$d" "$MNT/$d"; mount --make-rslave "$MNT/$d"; done
+
+GROUPS_WANTED="sudo audio video input render netdev plugdev bluetooth"
+GROUPS_OK=$(for g in $GROUPS_WANTED; do
+    if chroot "$MNT" getent group "$g" >/dev/null; then printf '%s,' "$g"; fi
+done)
+
+chroot "$MNT" /bin/bash -e <<EOF
+apt-get -y purge live-boot live-boot-initramfs-tools live-config live-config-systemd
+rm -rf /etc/live
+rm -f /etc/machine-id && systemd-machine-id-setup
+useradd -m -s /bin/bash -c "$USERNAME" -G "${GROUPS_OK%,}" "$USERNAME"
+EOF
+printf '%s:%s\n' "$USERNAME" "$PW1" | chroot "$MNT" chpasswd
+
+# --- Bootloader (64- oder 32-Bit-UEFI) ------------------------------------
+if [ "$(cat /sys/firmware/efi/fw_platform_size)" = 32 ]; then
+    GRUB_ARCH=ia32; GRUB_TARGET=i386-efi
+else
+    GRUB_ARCH=amd64; GRUB_TARGET=x86_64-efi
+fi
+. /etc/gole1.conf
+mkdir -p "$MNT/etc/default/grub.d"
+cat > "$MNT/etc/default/grub.d/gole1.cfg" <<EOF
+GRUB_DISTRIBUTOR="Gole1 Linux"
+GRUB_TIMEOUT=1
+GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=3 ${KERNEL_ARGS:-}"
+EOF
+
+echo "==> Installiere GRUB ($GRUB_TARGET)"
+chroot "$MNT" /bin/bash -e <<EOF
+dpkg -i /opt/gole1/debs/$GRUB_ARCH/*.deb
+grub-install --target=$GRUB_TARGET --efi-directory=/boot/efi --bootloader-id=gole1 || true
+grub-install --target=$GRUB_TARGET --efi-directory=/boot/efi --removable --no-nvram
+update-initramfs -u -k all
+update-grub
+EOF
+
+sync
+umount -R "$MNT"
+
+if whiptail --title "$TITLE" --yesno "Installation abgeschlossen.\n\nUSB-Stick abziehen und jetzt neu starten?" 10 60; then
+    systemctl reboot
+fi

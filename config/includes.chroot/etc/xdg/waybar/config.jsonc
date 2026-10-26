@@ -1,0 +1,63 @@
+// Gole1 Linux - Leiste mit großen Tipp-Flächen
+{
+    "layer": "top",
+    "position": "top",
+    "height": 42,
+    "spacing": 4,
+
+    "modules-left": ["custom/apps", "wlr/taskbar"],
+    "modules-center": ["clock"],
+    "modules-right": ["tray", "pulseaudio", "backlight", "custom/keyboard", "custom/rotate", "custom/power"],
+
+    "custom/apps": {
+        "format": "",
+        "on-click": "fuzzel",
+        "tooltip": false
+    },
+    "wlr/taskbar": {
+        "format": "{icon}",
+        "icon-size": 28,
+        "on-click": "activate",
+        "on-click-middle": "close",
+        "tooltip-format": "{title}"
+    },
+    "clock": {
+        "format": "{:%H:%M}",
+        "format-alt": "{:%a, %d.%m.%Y  %H:%M}",
+        "locale": "de_DE.UTF-8",
+        "tooltip": false
+    },
+    "tray": {
+        "icon-size": 24,
+        "spacing": 12
+    },
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": "",
+        "format-icons": { "default": ["", "", ""] },
+        "scroll-step": 5,
+        "on-click": "pavucontrol",
+        "tooltip": false
+    },
+    "backlight": {
+        "format": " {percent}%",
+        "on-scroll-up": "brightnessctl set +5%",
+        "on-scroll-down": "brightnessctl set 5%-",
+        "tooltip": false
+    },
+    "custom/keyboard": {
+        "format": "",
+        "on-click": "gole1-keyboard",
+        "tooltip": false
+    },
+    "custom/rotate": {
+        "format": "",
+        "on-click": "gole1-rotate",
+        "tooltip": false
+    },
+    "custom/power": {
+        "format": "",
+        "on-click": "wlogout -b 2",
+        "tooltip": false
+    }
+}

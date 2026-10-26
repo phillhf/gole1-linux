@@ -1,0 +1,4 @@
+# Komprimierter Swap im RAM statt Swap auf dem eMMC
+ALGO=zstd
+PERCENT=50
+PRIORITY=100

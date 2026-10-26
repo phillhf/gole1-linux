@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Gole1 Linux installieren
+Comment=Installiert das System auf den internen Speicher
+Exec=foot --title "Installation" sudo gole1-install
+Icon=drive-harddisk
+Terminal=false
+Categories=System;

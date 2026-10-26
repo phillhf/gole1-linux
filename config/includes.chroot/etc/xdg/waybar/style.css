@@ -1,0 +1,51 @@
+* {
+    font-family: "DejaVu Sans", "FontAwesome", "Font Awesome 6 Free";
+    font-size: 16px;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+}
+
+window#waybar {
+    background: rgba(36, 40, 50, 0.96);
+    color: #e5e9f0;
+}
+
+#custom-apps,
+#custom-keyboard,
+#custom-rotate,
+#custom-power,
+#pulseaudio,
+#backlight,
+#clock,
+#tray {
+    padding: 0 14px;
+}
+
+#custom-apps {
+    background: #5e81ac;
+    border-radius: 8px;
+    margin: 4px 6px;
+    font-size: 20px;
+}
+
+#custom-keyboard,
+#custom-rotate,
+#custom-power {
+    font-size: 20px;
+}
+
+#custom-power {
+    color: #bf616a;
+}
+
+#taskbar button {
+    padding: 0 8px;
+    margin: 4px 2px;
+    border-radius: 6px;
+    color: #e5e9f0;
+}
+
+#taskbar button.active {
+    background: rgba(255, 255, 255, 0.18);
+}

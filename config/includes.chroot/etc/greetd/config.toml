@@ -1,0 +1,12 @@
+[terminal]
+vt = 7
+
+# Anmeldemaske nach dem Abmelden
+[default_session]
+command = "tuigreet --time --asterisks --cmd labwc"
+user = "_greetd"
+
+# Automatische Anmeldung beim Start (vom Installer angepasst)
+[initial_session]
+command = "labwc"
+user = "user"

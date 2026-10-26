@@ -1,0 +1,24 @@
+{
+    "label" : "logout",
+    "action" : "labwc --exit",
+    "text" : "Abmelden",
+    "keybind" : "a"
+}
+{
+    "label" : "suspend",
+    "action" : "systemctl suspend",
+    "text" : "Bereitschaft",
+    "keybind" : "b"
+}
+{
+    "label" : "reboot",
+    "action" : "systemctl reboot",
+    "text" : "Neustart",
+    "keybind" : "n"
+}
+{
+    "label" : "shutdown",
+    "action" : "systemctl poweroff",
+    "text" : "Ausschalten",
+    "keybind" : "s"
+}

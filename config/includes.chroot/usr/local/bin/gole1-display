@@ -1,0 +1,46 @@
+#!/bin/sh
+# Wendet Drehung und Skalierung des internen Displays an.
+# Werte aus /etc/gole1.conf, überschreibbar in ~/.config/gole1/display.conf.
+#   gole1-display          Einstellungen anwenden
+#   gole1-display 90       Drehung einmalig vorgeben (normal|90|180|270|auto)
+
+ROTATION=auto
+SCALE=1
+OUTPUT=
+[ -f /etc/gole1.conf ] && . /etc/gole1.conf
+USERCONF="${XDG_CONFIG_HOME:-$HOME/.config}/gole1/display.conf"
+[ -f "$USERCONF" ] && . "$USERCONF"
+[ -n "$1" ] && ROTATION="$1"
+
+# Warten, bis der Compositor Ausgänge meldet
+i=0
+until wlr-randr >/dev/null 2>&1 || [ $i -ge 20 ]; do sleep 0.25; i=$((i + 1)); done
+
+if [ -z "$OUTPUT" ]; then
+    # Bevorzugt das eingebaute Panel (DSI/eDP), sonst den ersten Ausgang
+    OUTPUT=$(wlr-randr | awk '/^(DSI|eDP|LVDS)-/{print $1; exit}')
+    [ -z "$OUTPUT" ] && OUTPUT=$(wlr-randr | awk '/^[^ ]/{print $1; exit}')
+fi
+[ -z "$OUTPUT" ] && { echo "gole1-display: kein Ausgang gefunden" >&2; exit 1; }
+
+if [ "$ROTATION" = auto ]; then
+    MODE=$(wlr-randr | awk -v o="$OUTPUT" '/^[^ ]/{cur=($1==o)} cur && /current/{print $1; exit}')
+    W=${MODE%x*}; H=${MODE#*x}
+    if [ -n "$MODE" ] && [ "$H" -gt "$W" ] 2>/dev/null; then
+        ROTATION=90
+    else
+        ROTATION=normal
+    fi
+fi
+
+wlr-randr --output "$OUTPUT" --transform "$ROTATION" --scale "$SCALE"
+
+# Touch-Zuordnung anpassen, falls das Panel nicht DSI-1 heißt
+if [ "$OUTPUT" != "DSI-1" ]; then
+    RC="${XDG_CONFIG_HOME:-$HOME/.config}/labwc/rc.xml"
+    if [ ! -f "$RC" ] || grep -q 'mapToOutput="DSI-1"' "$RC"; then
+        mkdir -p "$(dirname "$RC")"
+        sed "s/mapToOutput=\"DSI-1\"/mapToOutput=\"$OUTPUT\"/" /etc/xdg/labwc/rc.xml > "$RC"
+        labwc --reconfigure >/dev/null 2>&1 || true
+    fi
+fi

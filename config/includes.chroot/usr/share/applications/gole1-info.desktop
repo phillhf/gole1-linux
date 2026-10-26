@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Systeminfo
+Comment=Hardware und Treiber prüfen
+Exec=foot --hold --title "Systeminfo" sudo gole1-info
+Icon=dialog-information
+Terminal=false
+Categories=System;

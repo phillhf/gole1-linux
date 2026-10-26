@@ -1,0 +1,22 @@
+# Wird von labwc beim Start der Sitzung ausgeführt
+
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP >/dev/null 2>&1
+
+# Drehung/Skalierung zuerst, damit die Leiste die richtige Breite bekommt
+gole1-display
+
+swaybg -c '#2e3440' >/dev/null 2>&1 &
+
+if [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/waybar/config.jsonc" ]; then
+    waybar >/dev/null 2>&1 &
+else
+    waybar -c /etc/xdg/waybar/config.jsonc -s /etc/xdg/waybar/style.css >/dev/null 2>&1 &
+fi
+
+mako >/dev/null 2>&1 &
+lxpolkit >/dev/null 2>&1 &
+nm-applet --indicator >/dev/null 2>&1 &
+blueman-applet >/dev/null 2>&1 &
+
+# Bildschirmtastatur versteckt starten, Umschalten über die Leiste
+wvkbd-mobintl --hidden -L 220 >/dev/null 2>&1 &

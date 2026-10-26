@@ -1,0 +1,50 @@
+#!/bin/sh
+# Systemweite Einstellungen für Gole1 Linux (läuft im chroot beim Bauen)
+set -e
+
+# --- Sprache, Tastatur, Zeitzone (Deutsch) ---
+sed -i 's/^# *\(de_DE.UTF-8 UTF-8\)/\1/; s/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+locale-gen
+update-locale LANG=de_DE.UTF-8
+cat > /etc/default/keyboard <<'EOF'
+XKBMODEL="pc105"
+XKBLAYOUT="de"
+XKBVARIANT=""
+XKBOPTIONS=""
+BACKSPACE="guess"
+EOF
+ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime
+echo "Europe/Berlin" > /etc/timezone
+
+# --- Dienste ---
+systemctl enable greetd.service NetworkManager.service bluetooth.service \
+    zramswap.service thermald.service systemd-timesyncd.service
+systemctl set-default graphical.target
+
+# Hintergrund-Jobs, die auf dem langsamen eMMC/Atom nur bremsen
+for unit in apt-daily.timer apt-daily-upgrade.timer man-db.timer e2scrub_all.timer; do
+    systemctl mask "$unit" || true
+done
+# Wöchentliches TRIM schont den eMMC
+systemctl enable fstrim.timer || true
+
+# Der Installer-Eintrag gehört nur ins Live-System (gole1-install entfernt ihn)
+chmod 0644 /usr/share/applications/gole1-*.desktop
+
+# --- GRUB-Pakete für den Installer vorhalten (64- und 32-Bit-UEFI) ---
+# Die Pakete werden erst bei der Installation auf den eMMC eingespielt,
+# damit sie nicht mit dem Live-Bootloader kollidieren.
+apt-get update
+for arch in amd64 ia32; do
+    mkdir -p /opt/gole1/debs/$arch
+    apt-get install -y --download-only --no-install-recommends \
+        -o Dir::Cache::archives=/opt/gole1/debs/$arch "grub-efi-$arch"
+    rm -rf /opt/gole1/debs/$arch/partial /opt/gole1/debs/$arch/lock
+done
+
+# --- Schlank halten: Doku, Manpages, fremde Sprachen entfernen ---
+find /usr/share/doc -type f ! -name copyright -delete
+find /usr/share/doc -type d -empty -delete
+rm -rf /usr/share/man/* /usr/share/info/* /usr/share/lintian/*
+find /usr/share/locale -mindepth 1 -maxdepth 1 -type d \
+    ! -name 'de*' ! -name 'en*' -exec rm -rf {} +

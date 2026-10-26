@@ -1,0 +1,29 @@
+# Treiber/Firmware für den GOLE1 (Intel Atom x5 "Cherry Trail")
+firmware-linux-free
+firmware-misc-nonfree
+firmware-intel-graphics
+firmware-intel-misc
+firmware-intel-sound
+firmware-sof-signed
+firmware-brcm80211
+firmware-realtek
+alsa-ucm-conf
+alsa-utils
+brightnessctl
+
+# Netzwerk & Bluetooth
+network-manager
+network-manager-applet
+nm-connection-editor
+wpasupplicant
+iw
+rfkill
+bluez
+blueman
+
+# Audio
+pipewire
+pipewire-pulse
+pipewire-alsa
+wireplumber
+pavucontrol

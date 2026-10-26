@@ -1,0 +1,28 @@
+name: ISO bauen
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build-Container erstellen
+        run: docker build -t gole1-builder .
+
+      - name: ISO bauen
+        # /mnt hat auf den GitHub-Runnern deutlich mehr freien Platz
+        run: |
+          sudo mkdir -p /mnt/gole1-build
+          docker run --rm --privileged -v "$PWD:/src" -v /mnt/gole1-build:/var/tmp/gole1-build gole1-builder
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gole1-linux-iso
+          path: out/*.iso*
+          compression-level: 0

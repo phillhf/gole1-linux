@@ -1,0 +1,5 @@
+#!/bin/sh
+# Bildschirmtastatur ein-/ausblenden (SIGRTMIN = umschalten bei wvkbd)
+if ! pkill --signal 34 -x wvkbd-mobintl; then
+    wvkbd-mobintl -L 220 >/dev/null 2>&1 &
+fi

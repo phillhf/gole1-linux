@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_menu>
+  <menu id="root-menu" label="">
+    <item label="Programme"><action name="Execute" command="fuzzel" /></item>
+    <item label="Terminal"><action name="Execute" command="foot" /></item>
+    <item label="Dateien"><action name="Execute" command="pcmanfm" /></item>
+    <item label="Firefox"><action name="Execute" command="firefox-esr" /></item>
+    <separator />
+    <item label="Bildschirm drehen"><action name="Execute" command="gole1-rotate" /></item>
+    <item label="Bildschirmtastatur"><action name="Execute" command="gole1-keyboard" /></item>
+    <item label="Netzwerk"><action name="Execute" command="nm-connection-editor" /></item>
+    <item label="Lautstärke"><action name="Execute" command="pavucontrol" /></item>
+    <separator />
+    <item label="Beenden ..."><action name="Execute" command="wlogout -b 2" /></item>
+  </menu>
+</openbox_menu>

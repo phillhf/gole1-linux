@@ -1,0 +1,38 @@
+#!/bin/sh
+# Zeigt Hardware-Infos, um Treiberprobleme am GOLE1 schnell einzugrenzen.
+
+h() { printf '\n\033[1;34m== %s ==\033[0m\n' "$1"; }
+
+h "System"
+echo "Gole1 Linux $(cat /etc/gole1-release 2>/dev/null)"
+cat /sys/class/dmi/id/sys_vendor /sys/class/dmi/id/product_name /sys/class/dmi/id/bios_version 2>/dev/null | paste -sd ' '
+uname -r
+grep -m1 'model name' /proc/cpuinfo
+free -h | head -2
+if [ -d /sys/firmware/efi ]; then
+    echo "UEFI $(cat /sys/firmware/efi/fw_platform_size)-Bit"
+else
+    echo "BIOS/Legacy-Start"
+fi
+
+h "Speicher"
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS
+
+h "Display"
+if [ -n "$WAYLAND_DISPLAY" ]; then wlr-randr; else ls /sys/class/drm; fi
+ls /sys/class/backlight 2>/dev/null
+
+h "Eingabegeräte (Touch)"
+grep -E '^N: Name=' /proc/bus/input/devices | sed 's/^N: Name=//'
+
+h "WLAN / Bluetooth"
+ip -brief link
+nmcli -t -f DEVICE,TYPE,STATE device 2>/dev/null
+
+h "Audio"
+aplay -l 2>/dev/null || echo "keine Soundkarte gefunden"
+
+h "Fehlende Firmware / Treiberfehler"
+sudo -n journalctl -k -b --no-pager 2>/dev/null \
+    | grep -iE 'firmware|brcmfmac|silead|goodix|sst|sof|error' | tail -n 40 \
+    || echo "(Für Kernel-Meldungen: sudo gole1-info)"

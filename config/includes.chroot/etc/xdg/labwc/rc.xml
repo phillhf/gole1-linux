@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<labwc_config>
+
+  <core>
+    <gap>0</gap>
+  </core>
+
+  <theme>
+    <cornerRadius>6</cornerRadius>
+    <font place="">
+      <name>DejaVu Sans</name>
+      <size>11</size>
+    </font>
+  </theme>
+
+  <placement>
+    <policy>center</policy>
+  </placement>
+
+  <!-- Touchscreen auf das interne Display abbilden, damit er der Drehung folgt.
+       gole1-display passt den Namen an, falls der Ausgang nicht DSI-1 heißt. -->
+  <touch deviceName="" mapToOutput="DSI-1" mouseEmulation="no" />
+
+  <!-- Auf 5 Zoll werden Fenster grundsätzlich maximiert geöffnet -->
+  <windowRules>
+    <windowRule identifier="*">
+      <action name="Maximize" />
+    </windowRule>
+  </windowRules>
+
+  <keyboard>
+    <default />
+    <keybind key="W-space">
+      <action name="Execute" command="fuzzel" />
+    </keybind>
+    <keybind key="W-Return">
+      <action name="Execute" command="foot" />
+    </keybind>
+    <keybind key="W-e">
+      <action name="Execute" command="pcmanfm" />
+    </keybind>
+    <keybind key="W-k">
+      <action name="Execute" command="gole1-keyboard" />
+    </keybind>
+    <keybind key="XF86MonBrightnessUp">
+      <action name="Execute" command="brightnessctl set +5%" />
+    </keybind>
+    <keybind key="XF86MonBrightnessDown">
+      <action name="Execute" command="brightnessctl set 5%-" />
+    </keybind>
+    <keybind key="XF86AudioRaiseVolume">
+      <action name="Execute" command="wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+" />
+    </keybind>
+    <keybind key="XF86AudioLowerVolume">
+      <action name="Execute" command="wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-" />
+    </keybind>
+    <keybind key="XF86AudioMute">
+      <action name="Execute" command="wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle" />
+    </keybind>
+  </keyboard>
+
+</labwc_config>

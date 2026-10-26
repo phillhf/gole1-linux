@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Bildschirm drehen
+Exec=gole1-rotate
+Icon=object-rotate-right
+Terminal=false
+Categories=Settings;

@@ -1,0 +1,32 @@
+# Schlanker Wayland-Desktop, für Touch optimiert
+greetd
+tuigreet
+labwc
+xwayland
+waybar
+fuzzel
+wvkbd
+wlogout
+swaybg
+wlr-randr
+mako-notifier
+lxpolkit
+xdg-utils
+xdg-desktop-portal-wlr
+grim
+
+# Darstellung
+fonts-dejavu-core
+fonts-font-awesome
+adwaita-icon-theme
+hicolor-icon-theme
+librsvg2-common
+shared-mime-info
+
+# Anwendungen
+foot
+pcmanfm
+mousepad
+imv
+firefox-esr
+firefox-esr-l10n-de

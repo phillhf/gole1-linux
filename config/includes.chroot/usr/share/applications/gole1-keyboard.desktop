@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Bildschirmtastatur
+Exec=gole1-keyboard
+Icon=input-keyboard
+Terminal=false
+Categories=Utility;

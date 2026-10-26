@@ -1,0 +1,30 @@
+#!/bin/sh
+# Dreht das Display um 90° weiter und merkt sich die Einstellung pro Benutzer.
+
+OUTPUT=
+[ -f /etc/gole1.conf ] && . /etc/gole1.conf
+USERCONF="${XDG_CONFIG_HOME:-$HOME/.config}/gole1/display.conf"
+[ -f "$USERCONF" ] && . "$USERCONF"
+
+if [ -z "$OUTPUT" ]; then
+    OUTPUT=$(wlr-randr | awk '/^(DSI|eDP|LVDS)-/{print $1; exit}')
+    [ -z "$OUTPUT" ] && OUTPUT=$(wlr-randr | awk '/^[^ ]/{print $1; exit}')
+fi
+
+CUR=$(wlr-randr | awk -v o="$OUTPUT" '/^[^ ]/{cur=($1==o)} cur && /Transform:/{print $2; exit}')
+case "$CUR" in
+    normal) NEXT=90 ;;
+    90)     NEXT=180 ;;
+    180)    NEXT=270 ;;
+    *)      NEXT=normal ;;
+esac
+
+wlr-randr --output "$OUTPUT" --transform "$NEXT"
+
+mkdir -p "$(dirname "$USERCONF")"
+touch "$USERCONF"
+if grep -q '^ROTATION=' "$USERCONF"; then
+    sed -i "s/^ROTATION=.*/ROTATION=$NEXT/" "$USERCONF"
+else
+    echo "ROTATION=$NEXT" >> "$USERCONF"
+fi
